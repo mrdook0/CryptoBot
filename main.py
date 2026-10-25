@@ -404,3 +404,8 @@ def handle_text_messages(message):
 
         user_states.pop(user_id, None)
     else:
+        bot.reply_to(message, "الرجاء استخدام الأوامر أو الضغط على الأزرار التفاعلية عبر إرسال /start", reply_markup=main_menu_keyboard())
+
+if __name__ == "__main__":
+    print("البوت التفاعلي SENZA CRYPTO SIGNALS يعمل الآن...")
+    bot.infinity_polling()
