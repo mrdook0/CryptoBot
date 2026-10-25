@@ -16,24 +16,33 @@ def send_telegram_message(message):
         "parse_mode": "Markdown"
     }
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, timeout=10)
         return response.json()
     except Exception as e:
         print(f"خطأ في إرسال الرسالة: {e}")
 
 def get_binance_spot_symbols():
-    url = "https://api.binance.com/api/v3/exchangeInfo"
+    # استخدام محاور بديلة لتجاوز القيود الجغرافية للسيرفرات
+    urls = [
+        "https://api.binance.com/api/v3/exchangeInfo",
+        "https://data-api.binance.vision/api/v3/exchangeInfo"
+    ]
     headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
-    try:
-        response = requests.get(url, headers=headers).json()
-        symbols = []
-        for s in response.get('symbols', []):
-            if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT':
-                symbols.append(s['symbol'])
-        return symbols
-    except Exception as e:
-        print(f"خطأ في جلب العملات: {e}")
-        return []
+    
+    for url in urls:
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                symbols = []
+                for s in data.get('symbols', []):
+                    if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT':
+                        symbols.append(s['symbol'])
+                return symbols
+        except Exception as e:
+            continue
+    print("خطأ في جلب العملات من كافة الروابط المتاحة.")
+    return []
 
 def calculate_rsi(prices, period=14):
     deltas = pd.Series(prices).diff()
@@ -44,18 +53,33 @@ def calculate_rsi(prices, period=14):
     return rsi.iloc[-1]
 
 def analyze_market():
-    print("جاري فحص سوق بايننس باستخدام مفتاح الـ API الخاص بك...")
+    print("جاري فحص سوق بايننس...")
     symbols = get_binance_spot_symbols()
     headers = {"X-MBX-APIKEY": BINANCE_API_KEY}
     
-    # فحص العملات للتأكد من الفرص القوية
+    if not symbols:
+        return
+
     for symbol in symbols[:50]: 
-        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h&limit=50"
-        try:
-            data = requests.get(url, headers=headers).json()
-            if not isinstance(data, list):
+        urls = [
+            f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h&limit=50",
+            f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval=1h&limit=50"
+        ]
+        
+        data = None
+        for url in urls:
+            try:
+                res = requests.get(url, headers=headers, timeout=10)
+                if res.status_code == 200:
+                    data = res.json()
+                    break
+            except:
                 continue
+                
+        if not isinstance(data, list):
+            continue
             
+        try:
             closes = [float(candle[4]) for candle in data]
             current_price = closes[-1]
             
@@ -80,7 +104,7 @@ def analyze_market():
                     f"• الهدف الأول (TP1): `{tp1:.5f}` (+3.5%)\n"
                     f"• الهدف الثاني (TP2): `{tp2:.5f}` (+7.0%)\n"
                     f"🛑 وقف الخسارة (SL): `{sl:.5f}` (-3.5%)\n\n"
-                    f"🛡️ *تم التحليل عبر ربط API بايننس (قراءة فقط).*"
+                    f"🛡️ *تم التحليل عبر ربط API بايننس (محدث لتجاوز الحظر).* "
                 )
                 send_telegram_message(msg)
                 time.sleep(1)
