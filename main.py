@@ -161,14 +161,14 @@ def main_menu_keyboard():
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     welcome_text = (
-        "مرحباً بك في **SENZA CRYPTO SIGNALS**! 💎🤖\n\n"
+        "مرحباً بك في SENZA CRYPTO SIGNALS!\n\n"
         "اختر الخيار المطلوب من الأزرار أدناه:\n"
-        "• **تحليل السوق:** جلب أفضل الفرص الحالية عبر فحص السوق.\n"
-        "• **تحليل عملة واحدة:** إدخال اسم عملة لفحصها بدقة عميقة.\n"
-        "• **الصفقات الناجحة والفاشلة:** لمتابعة سجل الأداء بكل شفافية.\n\n"
-        "_هذا البوت مجاني من w3t_o؛ استخدامه على مسؤوليتك الخاصة._"
+        "• تحليل السوق: جلب أفضل الفرص الحالية عبر فحص السوق.\n"
+        "• تحليل عملة واحدة: إدخال اسم عملة لفحصها بدقة عميقة.\n"
+        "• الصفقات الناجحة والفاشلة: لمتابعة سجل الأداء بكل شفافية.\n\n"
+        "هذا البوت مجاني من w3t_o؛ استخدامه على مسؤوليتك الخاصة."
     )
-    bot.reply_to(message, welcome_text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
+    bot.reply_to(message, welcome_text, reply_markup=main_menu_keyboard())
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
@@ -237,16 +237,16 @@ def handle_query(call):
                     
                     reasons_text = "\n".join([f"• {r}" for r in reasons])
                     opp_msg = (
-                        f"🚨 *فرصة تحليل سوق دقيقة* 🚨\n\n"
-                        f"💎 العملة: `{symbol}`\n"
-                        f"💰 السعر الحالي: `{current_price}`\n"
-                        f"📊 مؤشر RSI: `{rsi:.2f}`\n"
+                        f"🚨 فرصة تحليل سوق دقيقة 🚨\n\n"
+                        f"💎 العملة: {symbol}\n"
+                        f"💰 السعر الحالي: {current_price}\n"
+                        f"📊 مؤشر RSI: {rsi:.2f}\n"
                         f"📈 الأسباب الفنية:\n{reasons_text}\n\n"
                         f"🎯 الأهداف:\n"
-                        f"• TP1: `{tp1:.5f}` (+3.5%)\n"
-                        f"• TP2: `{tp2:.5f}` (+7.0%)\n"
-                        f"🛑 SL: `{sl:.5f}` (-3.5%)\n\n"
-                        f"🛡️ *SENZA CRYPTO SIGNALS*"
+                        f"• TP1: {tp1:.5f} (+3.5%)\n"
+                        f"• TP2: {tp2:.5f} (+7.0%)\n"
+                        f"🛑 SL: {sl:.5f} (-3.5%)\n\n"
+                        f"🛡️ SENZA CRYPTO SIGNALS"
                     )
                     found_opportunities.append(opp_msg)
 
@@ -268,7 +268,7 @@ def handle_query(call):
 
         if found_opportunities:
             for opp in found_opportunities:
-                bot.send_message(chat_id, opp, parse_mode="Markdown")
+                bot.send_message(chat_id, opp)
                 time.sleep(0.5)
         else:
             bot.send_message(chat_id, "📉 لا توجد فرص تطابق المعايير الفنية بدقة حالياً. جرب لاحقاً.")
@@ -276,7 +276,7 @@ def handle_query(call):
     elif call.data == "btn_single":
         user_states[user_id] = "waiting_for_symbol"
         bot.answer_callback_query(call.id)
-        bot.send_message(chat_id, "✍️ أرسل الآن اسم العملة التي تريد تحليلها بدقة (مثال: `BTCUSDT` أو `PEPEUSDT`):", parse_mode="Markdown")
+        bot.send_message(chat_id, "✍️ أرسل الآن اسم العملة التي تريد تحليلها بدقة (مثال: BTCUSDT أو PEPEUSDT):")
 
     elif call.data == "btn_success":
         bot.answer_callback_query(call.id, "جاري جلب الصفقات الناجحة...")
@@ -284,20 +284,20 @@ def handle_query(call):
         successful_deals = [d for d in deals if d.get('status') in ['SUCCESS_TP1', 'SUCCESS_ALL']]
 
         if not successful_deals:
-            bot.send_message(chat_id, "🏆 *سجل الصفقات الناجحة*\n\nلا توجد صفقات محققة للأهداف حتى الآن.", parse_mode="Markdown")
+            bot.send_message(chat_id, "🏆 سجل الصفقات الناجحة\n\nلا توجد صفقات محققة للأهداف حتى الآن.")
             return
 
-        report = "🏆 *سجل الصفقات الناجحة* 🏆\n\n"
+        report = "🏆 سجل الصفقات الناجحة 🏆\n\n"
         for idx, deal in enumerate(reversed(successful_deals[-10:]), 1):
             report += (
-                f"{idx}. 💎 *العملة:* `{deal.get('symbol')}`\n"
-                f"   💰 الدخول: `{deal.get('entry')}`\n"
-                f"   ✨ النتيجة: *{deal.get('result_note')}*\n"
-                f"   📅 التاريخ: `{deal.get('achieved_at', deal.get('created_at'))}`\n"
+                f"{idx}. 💎 العملة: {deal.get('symbol')}\n"
+                f"   💰 الدخول: {deal.get('entry')}\n"
+                f"   ✨ النتيجة: {deal.get('result_note')}\n"
+                f"   📅 التاريخ: {deal.get('achieved_at', deal.get('created_at'))}\n"
                 f"----------------------------------------\n"
             )
-        report += "\n🛡️ *SENZA CRYPTO SIGNALS*"
-        bot.send_message(chat_id, report, parse_mode="Markdown")
+        report += "\n🛡️ SENZA CRYPTO SIGNALS"
+        bot.send_message(chat_id, report)
 
     elif call.data == "btn_failed":
         bot.answer_callback_query(call.id, "جاري جلب الصفقات الفاشلة...")
@@ -305,20 +305,20 @@ def handle_query(call):
         failed_deals = [d for d in deals if d.get('status') == 'FAILED']
 
         if not failed_deals:
-            bot.send_message(chat_id, "❌ *سجل الصفقات الفاشلة*\n\nرائع! لا توجد صفقات ضربت وقف الخسارة.", parse_mode="Markdown")
+            bot.send_message(chat_id, "❌ سجل الصفقات الفاشلة\n\nرائع! لا توجد صفقات ضربت وقف الخسارة.")
             return
 
-        report = "❌ *سجل الصفقات الفاشلة* ❌\n\n"
+        report = "❌ سجل الصفقات الفاشلة ❌\n\n"
         for idx, deal in enumerate(reversed(failed_deals[-10:]), 1):
             report += (
-                f"{idx}. 💎 *العملة:* `{deal.get('symbol')}`\n"
-                f"   💰 الدخول: `{deal.get('entry')}`\n"
-                f"   ⚠️ النتيجة: *{deal.get('result_note')}*\n"
-                f"   📅 التاريخ: `{deal.get('achieved_at', deal.get('created_at'))}`\n"
+                f"{idx}. 💎 العملة: {deal.get('symbol')}\n"
+                f"   💰 الدخول: {deal.get('entry')}\n"
+                f"   ⚠️ النتيجة: {deal.get('result_note')}\n"
+                f"   📅 التاريخ: {deal.get('achieved_at', deal.get('created_at'))}\n"
                 f"----------------------------------------\n"
             )
-        report += "\n🛡️ *SENZA CRYPTO SIGNALS*"
-        bot.send_message(chat_id, report, parse_mode="Markdown")
+        report += "\n🛡️ SENZA CRYPTO SIGNALS"
+        bot.send_message(chat_id, report)
 
     elif call.data == "btn_exit":
         if user_id in user_states:
@@ -336,7 +336,7 @@ def handle_text_messages(message):
         if not symbol.endswith("USDT"):
             symbol += "USDT"
 
-        bot.send_message(chat_id, f"🔍 جاري إجراء تحليل فني عميق ومتقدم للعملة `{symbol}` باستخدام عدة مؤشرات...", parse_mode="Markdown")
+        bot.send_message(chat_id, f"🔍 جاري إجراء تحليل فني عميق ومتقدم للعملة {symbol} باستخدام عدة مؤشرات...")
         
         urls = [
             f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h&limit=100",
@@ -354,7 +354,7 @@ def handle_text_messages(message):
                 continue
 
         if not isinstance(data, list) or len(data) < 50:
-            bot.send_message(chat_id, f"❌ تعذر العثور على بيانات كافية للعملة `{symbol}`. تأكد من صحة الرمز.", parse_mode="Markdown")
+            bot.send_message(chat_id, f"❌ تعذر العثور على بيانات كافية للعملة {symbol}. تأكد من صحة الرمز.")
             user_states.pop(user_id, None)
             return
 
@@ -370,20 +370,20 @@ def handle_text_messages(message):
             reasons_text = "\n".join([f"• {r}" for r in reasons]) if reasons else "• تحليل السعر الحالي واستقرار الدعم."
             
             analysis_report = (
-                f"🎯 *تحليل عميق ودقيق لعملة واحدة* 🎯\n\n"
-                f"💎 العملة: `{symbol}`\n"
-                f"💰 السعر الحالي: `{current_price}`\n"
-                f"📊 مؤشر RSI: `{rsi:.2f}`\n"
-                f"📉 متوسط EMA 50: `{ema50:.5f}`\n"
-                f"📈 تقييم الزخم الفني: `{'إيجابي قوي ✨' if score >= 2 else 'حذر / محايد ⚠️'}`\n\n"
-                f"🔍 *أبرز الملاحظات الفنية:*\n{reasons_text}\n\n"
-                f"🎯 *الأهداف المقترحة بدقة:*\n"
-                f"• الهدف الأول (TP1): `{tp1:.5f}` (+3.5%)\n"
-                f"• الهدف الثاني (TP2): `{tp2:.5f}` (+7.0%)\n"
-                f"🛑 وقف الخسارة (SL): `{sl:.5f}` (-3.5%)\n\n"
-                f"🛡️ *SENZA CRYPTO SIGNALS*"
+                f"🎯 تحليل عميق ودقيق لعملة واحدة 🎯\n\n"
+                f"💎 العملة: {symbol}\n"
+                f"💰 السعر الحالي: {current_price}\n"
+                f"📊 مؤشر RSI: {rsi:.2f}\n"
+                f"📉 متوسط EMA 50: {ema50:.5f}\n"
+                f"📈 تقييم الزخم الفني: {'إيجابي قوي ✨' if score >= 2 else 'حذر / محايد ⚠️'}\n\n"
+                f"🔍 أبرز الملاحظات الفنية:\n{reasons_text}\n\n"
+                f"🎯 الأهداف المقترحة بدقة:\n"
+                f"• الهدف الأول (TP1): {tp1:.5f} (+3.5%)\n"
+                f"• الهدف الثاني (TP2): {tp2:.5f} (+7.0%)\n"
+                f"🛑 وقف الخسارة (SL): {sl:.5f} (-3.5%)\n\n"
+                f"🛡️ SENZA CRYPTO SIGNALS"
             )
-            bot.send_message(chat_id, analysis_report, parse_mode="Markdown")
+            bot.send_message(chat_id, analysis_report)
 
             deals = load_deals()
             if not any(d.get('symbol') == symbol and d.get('status') == 'ACTIVE' for d in deals):
