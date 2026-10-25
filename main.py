@@ -15,10 +15,9 @@ BINANCE_API_KEY = "NCFYVdVIzzr5xurb9LwtpgUoHbE7bX3nr9mq7WVsLSPxetNC8FIbCWnPONVbJ
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
-# تتبع حالات المستخدمين (لمعرفة من ينتظر إدخال اسم عملة للتحليل الفردي)
 user_states = {}
 user_cooldowns = {}
-COOLDOWN_TIME = 180  # 3 دقائق بالثواني
+COOLDOWN_TIME = 180  # 3 دقائق
 
 HISTORY_FILE = "deals_history.json"
 
@@ -58,11 +57,9 @@ def get_binance_spot_symbols():
             continue
     return []
 
-# مؤشرات فنية متقدمة (RSI + EMA 50 & 200 + Bollinger Bands) لتحليل عميق ودقيق
 def advanced_technical_analysis(closes):
     series = pd.Series(closes)
     
-    # 1. مؤشر RSI (14)
     deltas = series.diff()
     gain = (deltas.where(deltas > 0, 0)).rolling(window=14).mean()
     loss = (-deltas.where(deltas < 0, 0)).rolling(window=14).mean()
@@ -70,18 +67,15 @@ def advanced_technical_analysis(closes):
     rsi = 100 - (100 / (1 + rs))
     current_rsi = rsi.iloc[-1]
 
-    # 2. المتوسطات المتحركة (EMA 50 & EMA 200)
     ema_50 = series.ewm(span=50, adjust=False).mean().iloc[-1]
     ema_200 = series.ewm(span=200, adjust=False).mean().iloc[-1]
 
-    # 3. بولينجر باند (Bollinger Bands)
     sma_20 = series.rolling(window=20).mean().iloc[-1]
     std_20 = series.rolling(window=20).std().iloc[-1]
     upper_band = sma_20 + (std_20 * 2)
     lower_band = sma_20 - (std_20 * 2)
     current_price = closes[-1]
 
-    # تقييم قوة الفرصة بناءً على تقاطع المؤشرات
     score = 0
     reasons = []
 
@@ -171,7 +165,8 @@ def send_welcome(message):
         "اختر الخيار المطلوب من الأزرار أدناه:\n"
         "• **تحليل السوق:** جلب أفضل الفرص الحالية عبر فحص السوق.\n"
         "• **تحليل عملة واحدة:** إدخال اسم عملة لفحصها بدقة عميقة.\n"
-        "• **الصفقات الناجحة والفاشلة:** لمتابعة سجل الأداء بكل شفافية."
+        "• **الصفقات الناجحة والفاشلة:** لمتابعة سجل الأداء بكل شفافية.\n\n"
+        "_هذا البوت مجاني من w3t_o؛ استخدامه على مسؤوليتك الخاصة._"
     )
     bot.reply_to(message, welcome_text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
 
@@ -193,7 +188,7 @@ def handle_query(call):
 
         user_cooldowns[user_id] = current_time
         bot.answer_callback_query(call.id, "جاري تحليل السوق...")
-        bot.send_message(chat_id, "🔍 جاري فحص السوق والبحث عن أفضل 3 فرص ذات موثوقية عالية...")
+        bot.send_message(chat_id, "🔍 جاري فحص السوق والبحث عن أفضل الفرص ذات الموثوقية العالية...")
 
         symbols = get_binance_spot_symbols()
         if not symbols:
@@ -230,12 +225,12 @@ def handle_query(call):
                 closes = [float(candle[4]) for candle in data]
                 current_price = closes[-1]
                 
-                if current_price > 1.00: # شروط سعر مرنة ومدروسة
+                if current_price > 1.00:
                     continue
                     
                 rsi, ema50, ema200, score, reasons = advanced_technical_analysis(closes)
                 
-                if score >= 2: # شروط دقيقة تضمن جودة الفرصة
+                if score >= 2:
                     tp1 = current_price * 1.035
                     tp2 = current_price * 1.070
                     sl = current_price * 0.965
@@ -255,7 +250,7 @@ def handle_query(call):
                     )
                     found_opportunities.append(opp_msg)
 
-                    if not any(d['symbol'] == symbol and d['status'] == 'ACTIVE' for d in deals):
+                    if not any(d.get('symbol') == symbol and d.get('status') == 'ACTIVE' for d in deals):
                         deals.append({
                             "symbol": symbol,
                             "entry": current_price,
@@ -295,10 +290,10 @@ def handle_query(call):
         report = "🏆 *سجل الصفقات الناجحة* 🏆\n\n"
         for idx, deal in enumerate(reversed(successful_deals[-10:]), 1):
             report += (
-                f"{idx}. 💎 *العملة:* `{deal['symbol']}`\n"
-                f"   💰 الدخول: `{deal['entry']}`\n"
-                f"   ✨ النتيجة: *{deal['result_note']}*\n"
-                f"   📅 التاريخ: `{deal.get('achieved_at', deal['created_at'])}`\n"
+                f"{idx}. 💎 *العملة:* `{deal.get('symbol')}`\n"
+                f"   💰 الدخول: `{deal.get('entry')}`\n"
+                f"   ✨ النتيجة: *{deal.get('result_note')}*\n"
+                f"   📅 التاريخ: `{deal.get('achieved_at', deal.get('created_at'))}`\n"
                 f"----------------------------------------\n"
             )
         report += "\n🛡️ *SENZA CRYPTO SIGNALS*"
@@ -307,7 +302,7 @@ def handle_query(call):
     elif call.data == "btn_failed":
         bot.answer_callback_query(call.id, "جاري جلب الصفقات الفاشلة...")
         deals = load_deals()
-        failed_deals = [d for d in deals if d.get('status'] == 'FAILED']
+        failed_deals = [d for d in deals if d.get('status') == 'FAILED']
 
         if not failed_deals:
             bot.send_message(chat_id, "❌ *سجل الصفقات الفاشلة*\n\nرائع! لا توجد صفقات ضربت وقف الخسارة.", parse_mode="Markdown")
@@ -316,10 +311,10 @@ def handle_query(call):
         report = "❌ *سجل الصفقات الفاشلة* ❌\n\n"
         for idx, deal in enumerate(reversed(failed_deals[-10:]), 1):
             report += (
-                f"{idx}. 💎 *العملة:* `{deal['symbol']}`\n"
-                f"   💰 الدخول: `{deal['entry']}`\n"
-                f"   ⚠️ النتيجة: *{deal['result_note']}*\n"
-                f"   📅 التاريخ: `{deal.get('achieved_at', deal['created_at'])}`\n"
+                f"{idx}. 💎 *العملة:* `{deal.get('symbol')}`\n"
+                f"   💰 الدخول: `{deal.get('entry')}`\n"
+                f"   ⚠️ النتيجة: *{deal.get('result_note')}*\n"
+                f"   📅 التاريخ: `{deal.get('achieved_at', deal.get('created_at'))}`\n"
                 f"----------------------------------------\n"
             )
         report += "\n🛡️ *SENZA CRYPTO SIGNALS*"
@@ -336,11 +331,10 @@ def handle_text_messages(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
 
-    # التحقق مما إذا كان المستخدم في وضع إدخال اسم عملة للتحليل الفردي
     if user_states.get(user_id) == "waiting_for_symbol":
         symbol = message.text.strip().upper()
         if not symbol.endswith("USDT"):
-            symbol += "USDT" # إضافة USDT تلقائياً إذا نسبرها المستخدم
+            symbol += "USDT"
 
         bot.send_message(chat_id, f"🔍 جاري إجراء تحليل فني عميق ومتقدم للعملة `{symbol}` باستخدام عدة مؤشرات...", parse_mode="Markdown")
         
@@ -391,9 +385,8 @@ def handle_text_messages(message):
             )
             bot.send_message(chat_id, analysis_report, parse_mode="Markdown")
 
-            # حفظ الصفقة في التتبع الفردي أيضاً
             deals = load_deals()
-            if not any(d['symbol'] == symbol and d['status'] == 'ACTIVE' for d in deals):
+            if not any(d.get('symbol') == symbol and d.get('status') == 'ACTIVE' for d in deals):
                 deals.append({
                     "symbol": symbol,
                     "entry": current_price,
@@ -409,11 +402,5 @@ def handle_text_messages(message):
         except Exception as e:
             bot.send_message(chat_id, f"❌ حدث خطأ أثناء تحليل البيانات: {e}")
 
-        # مسح حالة الانتظار بعد اتمام الطلب
         user_states.pop(user_id, None)
     else:
-        bot.reply_to(message, "الرجاء استخدام الأوامر أو الضغط على الأزرار التفاعلية عبر إرسال /start", reply_markup=main_menu_keyboard())
-
-if __name__ == "__main__":
-    print("البوت التفاعلي SENZA CRYPTO SIGNALS يعمل الآن...")
-    bot.infinity_polling()
