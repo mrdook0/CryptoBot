@@ -161,7 +161,7 @@ def main_menu_keyboard():
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     welcome_text = (
-        "مرحباً بك في Senza Crypto Signals!💸\n\n"
+        "مرحباً بك في SENZA CRYPTO SIGNALS!\n\n"
         "اختر الخيار المطلوب من الأزرار أدناه:\n"
         "• تحليل السوق: جلب أفضل الفرص الحالية عبر فحص السوق.\n"
         "• تحليل عملة واحدة: إدخال اسم عملة لفحصها بدقة عميقة.\n"
@@ -406,18 +406,27 @@ def handle_text_messages(message):
     else:
         bot.reply_to(message, "الرجاء استخدام الأوامر أو الضغط على الأزرار التفاعلية عبر إرسال /start", reply_markup=main_menu_keyboard())
 
-if __name__ == "__main__":
-    print("البوت التفاعلي SENZA CRYPTO SIGNALS يعمل الآن...")
-    # إزالة أي اتصالات معلقة سابقة لمنع حدوث خطأ Conflict 409
-    bot.remove_webhook()
-    time.sleep(1)
-    bot.infinity_polling(skip_pending=True)
-if __name__ == "__main__":
-    print("البوت التفاعلي Senza Crypto Signals يعمل الآن...")
+# ==================== نظام الاتصال الذكي لمنع الإيرور 409 ====================
+def start_bot_safely():
+    try:
+        bot.remove_webhook()
+        time.sleep(2)
+    except:
+        pass
+
     while True:
         try:
-            bot.remove_webhook()
-            bot.infinity_polling(timeout=60, long_polling_timeout=60)
+            print("جاري تشغيل البوت SENZA CRYPTO SIGNALS بنجاح...")
+            bot.polling(none_stop=True, interval=2, timeout=30)
         except Exception as e:
-            print(f"حدث خطأ، إعادة المحاولة خلال 5 ثوانٍ: {e}")
-            time.sleep(5)
+            err_str = str(e)
+            if "409" in err_str or "Conflict" in err_str:
+                # هذا يتكفل بحل أي تعارض تلقائياً عبر الانتظار حتى تنتهي الجلسة القديمة في تيليجرام
+                print("تم اكتشاف جلسة سابقة معلقة، يتم الانتظار 10 ثوانٍ للتحرير التلقائي...")
+                time.sleep(10)
+            else:
+                print(f"حدث انقطاع مؤقت: {e}، إعادة الاتصال بعد 5 ثوانٍ...")
+                time.sleep(5)
+
+if __name__ == "__main__":
+    start_bot_safely()
