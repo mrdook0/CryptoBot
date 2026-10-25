@@ -22,7 +22,6 @@ def send_telegram_message(message):
         print(f"خطأ في إرسال الرسالة: {e}")
 
 def get_binance_spot_symbols():
-    # استخدام محاور بديلة لتجاوز القيود الجغرافية للسيرفرات
     urls = [
         "https://api.binance.com/api/v3/exchangeInfo",
         "https://data-api.binance.vision/api/v3/exchangeInfo"
@@ -104,7 +103,7 @@ def analyze_market():
                     f"• الهدف الأول (TP1): `{tp1:.5f}` (+3.5%)\n"
                     f"• الهدف الثاني (TP2): `{tp2:.5f}` (+7.0%)\n"
                     f"🛑 وقف الخسارة (SL): `{sl:.5f}` (-3.5%)\n\n"
-                    f"🛡️ *تم التحليل عبر ربط API بايننس (محدث لتجاوز الحظر).* "
+                    f"🛡️ *Bot Official Signals*"
                 )
                 send_telegram_message(msg)
                 time.sleep(1)
