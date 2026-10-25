@@ -408,4 +408,7 @@ def handle_text_messages(message):
 
 if __name__ == "__main__":
     print("البوت التفاعلي SENZA CRYPTO SIGNALS يعمل الآن...")
-    bot.infinity_polling()
+    # إزالة أي اتصالات معلقة سابقة لمنع حدوث خطأ Conflict 409
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.infinity_polling(skip_pending=True)
