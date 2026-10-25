@@ -82,7 +82,7 @@ def get_current_price(symbol):
             continue
     return None
 
-# دالة تعمل في الخلفية لمتابعة الصفقات المفتوحة وتحديث النجاحات
+# دالة تعمل في الخلفية لمتابعة الصفقات المفتوحة وتحديث النجاح والفشل بدقة
 def track_deals_background():
     while True:
         try:
@@ -93,13 +93,19 @@ def track_deals_background():
                     symbol = deal['symbol']
                     price = get_current_price(symbol)
                     if price:
-                        # فحص تحقيق الهدف الثاني
-                        if price >= deal['tp2']:
+                        # 1. فحص وقف الخسارة أولاً (إذا السعر نزل تحت SL)
+                        if price <= deal['sl']:
+                            deal['status'] = 'FAILED'
+                            deal['achieved_at'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                            deal['result_note'] = "ضربت وقف الخسارة (SL) ❌ (-3.5%)"
+                            updated = True
+                        # 2. فحص تحقيق الهدف الثاني
+                        elif price >= deal['tp2']:
                             deal['status'] = 'SUCCESS_ALL'
                             deal['achieved_at'] = datetime.now().strftime("%Y-%m-%d %H:%M")
                             deal['result_note'] = "حققت كافة الأهداف (TP1 & TP2) ✨ (+7.0%)"
                             updated = True
-                        # فحص تحقيق الهدف الأول فقط
+                        # 3. فحص تحقيق الهدف الأول فقط
                         elif price >= deal['tp1']:
                             deal['status'] = 'SUCCESS_TP1'
                             deal['achieved_at'] = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -116,21 +122,21 @@ def track_deals_background():
 tracking_thread = threading.Thread(target=track_deals_background, daemon=True)
 tracking_thread.start()
 
-# لوحة الأزرار الرئيسية
+# لوحة الأزرار الرئيسية (تمت إضافة زر الصفقات الفاشلة)
 def main_menu_keyboard():
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_top = types.InlineKeyboardButton("📊 أفضل 3 فرص متاحة", callback_data="btn_top")
-    btn_history = types.InlineKeyboardButton("🏆 الصفقات الناجحة", callback_data="btn_history")
-    markup.add(btn_top, btn_history)
+    btn_success = types.InlineKeyboardButton("🏆 الصفقات الناجحة", callback_data="btn_success")
+    btn_failed = types.InlineKeyboardButton("❌ الصفقات الفاشلة", callback_data="btn_failed")
+    markup.add(btn_top)
+    markup.add(btn_success, btn_failed)
     return markup
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     welcome_text = (
         "مرحباً بك في **Bot Official Signals**! 🤖💎\n\n"
-        "اختر الخيار المطلوب من الأزرار أدناه:\n"
-        "• **أفضل 3 فرص:** جلب أحدث التحليلات المتاحة في السوق.\n"
-        "• **الصفقات الناجحة:** عرض سجل الصفقات التي حققت أهدافها."
+        "اختر الخيار المطلوب من الأزرار أدناه للتحكم بمتابعة السوق والنتائج:"
     )
     bot.reply_to(message, welcome_text, parse_mode="Markdown", reply_markup=main_menu_keyboard())
 
@@ -237,7 +243,7 @@ def handle_query(call):
         else:
             bot.send_message(chat_id, "📉 لم يتم العثور على فرص تطابق الشروط بدقة عالية في هذه اللحظة. جرب مرة أخرى لاحقاً.")
 
-    elif call.data == "btn_history":
+    elif call.data == "btn_success":
         bot.answer_callback_query(call.id, "جاري جلب الصفقات الناجحة...")
         deals = load_deals()
         successful_deals = [d for d in deals if d.get('status') in ['SUCCESS_TP1', 'SUCCESS_ALL']]
@@ -246,7 +252,7 @@ def handle_query(call):
             bot.send_message(chat_id, "🏆 *سجل الصفقات الناجحة*\n\nلا توجد صفقات محققة للأهداف موثقة في السجل حتى الآن.", parse_mode="Markdown")
             return
 
-        report = "🏆 *سجل الصفقات الناجحة مؤخراً* 🏆\n\n"
+        report = "🏆 *سجل الصفقات الناجحة* 🏆\n\n"
         for idx, deal in enumerate(reversed(successful_deals[-10:]), 1):
             report += (
                 f"{idx}. 💎 *العملة:* `{deal['symbol']}`\n"
@@ -258,6 +264,27 @@ def handle_query(call):
         report += "\n🛡️ *Bot Official Signals*"
         bot.send_message(chat_id, report, parse_mode="Markdown")
 
+    elif call.data == "btn_failed":
+        bot.answer_callback_query(call.id, "جاري جلب الصفقات الفاشلة...")
+        deals = load_deals()
+        failed_deals = [d for d in deals if d.get('status') == 'FAILED']
+
+        if not failed_deals:
+            bot.send_message(chat_id, "❌ *سجل الصفقات الفاشلة*\n\nرائع! لا توجد صفقات ضربت وقف الخسارة حتى الآن.", parse_mode="Markdown")
+            return
+
+        report = "❌ *سجل الصفقات الفاشلة (ضربت وقف الخسارة)* ❌\n\n"
+        for idx, deal in enumerate(reversed(failed_deals[-10:]), 1):
+            report += (
+                f"{idx}. 💎 *العملة:* `{deal['symbol']}`\n"
+                f"   💰 سعر الدخول: `{deal['entry']}`\n"
+                f"   ⚠️ النتيجة: *{deal['result_note']}*\n"
+                f"   📅 التاريخ: `{deal.get('achieved_at', deal['created_at'])}`\n"
+                f"----------------------------------------\n"
+            )
+        report += "\n🛡️ *Bot Official Signals*"
+        bot.send_message(chat_id, report, parse_mode="Markdown")
+
 if __name__ == "__main__":
-    print("البوت التفاعلي يعمل الآن بنجاح مع نظام تتبع الصفقات الناجحة...")
+    print("البوت التفاعلي يعمل الآن بنجاح مع تتبع الصفقات الناجحة والفاشلة...")
     bot.infinity_polling()
