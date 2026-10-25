@@ -161,7 +161,7 @@ def main_menu_keyboard():
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     welcome_text = (
-        "مرحباً بك في SENZA CRYPTO SIGNALS!\n\n"
+        "مرحباً بك في Senza Crypto Signals!💸\n\n"
         "اختر الخيار المطلوب من الأزرار أدناه:\n"
         "• تحليل السوق: جلب أفضل الفرص الحالية عبر فحص السوق.\n"
         "• تحليل عملة واحدة: إدخال اسم عملة لفحصها بدقة عميقة.\n"
@@ -412,3 +412,12 @@ if __name__ == "__main__":
     bot.remove_webhook()
     time.sleep(1)
     bot.infinity_polling(skip_pending=True)
+if __name__ == "__main__":
+    print("البوت التفاعلي Senza Crypto Signals يعمل الآن...")
+    while True:
+        try:
+            bot.remove_webhook()
+            bot.infinity_polling(timeout=60, long_polling_timeout=60)
+        except Exception as e:
+            print(f"حدث خطأ، إعادة المحاولة خلال 5 ثوانٍ: {e}")
+            time.sleep(5)
